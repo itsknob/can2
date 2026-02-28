@@ -72,7 +72,9 @@ typedef struct App {
     Widget* widget;
 
     // Data
+    CAN2FormData* current_input;
     CAN2FormData* form_data;
+    CAN2FormData* edit_data_simple_data;
 } App;
 
 /** Main Menu Scene Indicies and Events */
@@ -271,12 +273,15 @@ typedef enum {
 // TODO: add any events or menu options here
 void can2_edit_data_simple_variable_input_callback(VariableItem* item) {
     App* app = variable_item_get_context(item);
+    uint8_t current_index = variable_item_list_get_selected_item_index(app->variable_item_list);
     // TODO: invoke text input, store result into buffer
 
+    // open text input view -> update app->form_data->form_input[1
     scene_manager_handle_custom_event(app->scene_manager, CAN2VariableListTextInputEvent);
 
     // use buffer to set new text
-    variable_item_set_current_value_text(item, app->form_data->form_inputs[0]->form_input_value);
+    variable_item_set_current_value_text(
+        item, app->form_data->form_inputs[current_index]->form_input_value);
 }
 
 void can2_send_data_scene_edit_button_callback(
@@ -297,27 +302,35 @@ void can2_send_data_scene_on_enter(void* context) {
     VariableItem* item_device_id = variable_item_list_add(
         app->variable_item_list,
         "Device ID",
-        1,
+        2,
         can2_edit_data_simple_variable_input_callback,
         app);
 
     VariableItem* item_data_length = variable_item_list_add(
         app->variable_item_list,
         "Data Length",
-        1,
+        2,
         can2_edit_data_simple_variable_input_callback,
         app);
 
     VariableItem* item_raw_data = variable_item_list_add(
         app->variable_item_list,
         "Raw Data ",
-        1,
+        2,
         can2_edit_data_simple_variable_input_callback,
         app);
 
-    variable_item_set_current_value_text(item_device_id, "000");
-    variable_item_set_current_value_text(item_data_length, "8");
-    variable_item_set_current_value_text(item_raw_data, "0x000000");
+    // // TODO: use default values from config file?
+    // app->form_data->form_inputs[0]->form_input_value = "000";
+    // app->form_data->form_inputs[1]->form_input_value = "8";
+    // app->form_data->form_inputs[2]->form_input_value = "0x000000";
+
+    variable_item_set_current_value_text(
+        item_device_id, app->edit_data_simple_data->form_inputs[0]->form_input_value);
+    variable_item_set_current_value_text(
+        item_data_length, app->edit_data_simple_data->form_inputs[1]->form_input_value);
+    variable_item_set_current_value_text(
+        item_raw_data, app->edit_data_simple_data->form_inputs[2]->form_input_value);
 
     variable_item_set_current_value_index(item_device_id, CAN2VariableListItemDeviceId);
     variable_item_set_current_value_index(item_data_length, CAN2VariableListItemDataLength);
@@ -355,6 +368,13 @@ void can2_send_data_scene_on_enter(void* context) {
     //
     // view_dispatcher_switch_to_view(app->view_dispatcher, CAN2WidgetView);
 }
+
+// Callback to return to variable_item_list_view from text input?
+void can2_variable_list_text_input_callback(void* context) {
+    App* app = context;
+    view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
+}
+
 bool can2_send_data_scene_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
@@ -367,8 +387,9 @@ bool can2_send_data_scene_on_event(void* context, SceneManagerEvent event) {
             text_input_set_header_text(app->text_input, "Device ID");
             text_input_set_result_callback(
                 app->text_input,
-                NULL,
+                can2_variable_list_text_input_callback,
                 app,
+                // needs to be where the value of "Device Id"'s input lives'
                 app->form_data->form_inputs[0]->form_input_value,
                 app->form_data->form_inputs[0]->form_input_size,
                 true);
@@ -488,7 +509,7 @@ static void form_input_alloc(CAN2FormInput* input, uint8_t input_size) {
 // Allocate a new Form Data container with a number of inputs
 // TODO: Figure out how to not hardcode this to 4 inputs
 static void form_data_alloc(CAN2FormData* form_data) {
-    const uint8_t NUM_INPUTS = 4;
+    const uint8_t NUM_INPUTS = 3;
     const uint8_t INPUT_SIZE = 24;
 
     // allocate form_input for each of NUM_INPUTS
@@ -500,11 +521,25 @@ static void form_data_alloc(CAN2FormData* form_data) {
     form_data->current_input_number = 0; // start at first input
 }
 
+// TODO: Update entire allocation process using correct data types
+void can2_edit_data_simple_form_data_init(CAN2FormData* edit_data_simple_data) {
+    // Device ID
+    edit_data_simple_data->form_inputs[0]->form_input_value = "000";
+    // Data Length
+    edit_data_simple_data->form_inputs[1]->form_input_value = "8";
+    // Raw Data (hex)
+    edit_data_simple_data->form_inputs[2]->form_input_value = "0x000000";
+}
+
 /** Allocation Fucntion **/
 static App* can2_alloc() {
     App* app = malloc(sizeof(App));
     app->form_data = malloc(sizeof(CAN2FormData));
     form_data_alloc(app->form_data);
+
+    app->edit_data_simple_data = malloc(sizeof(CAN2FormData));
+    form_data_alloc(app->edit_data_simple_data);
+    can2_edit_data_simple_form_data_init(app->edit_data_simple_data);
 
     // GUI Management
     app->scene_manager = scene_manager_alloc(&can2_scene_manager_handlers, app);
