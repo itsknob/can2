@@ -68,6 +68,7 @@ typedef struct App {
     ByteInput* byte_input;
     TextBox* text_box;
     VariableItemList* variable_item_list;
+    VariableItem* current_item;
     DialogEx* dialog;
     Widget* widget;
 
@@ -271,26 +272,24 @@ typedef enum {
 } CANVariableListItem;
 
 // TODO: add any events or menu options here
-void can2_edit_data_simple_variable_input_callback(VariableItem* item) {
-    App* app = variable_item_get_context(item);
-    uint8_t current_index = variable_item_list_get_selected_item_index(app->variable_item_list);
-    // TODO: invoke text input, store result into buffer
+void can2_edit_data_simple_variable_item_changed(VariableItem* current_item) {
+    App* app = variable_item_get_context(current_item);
+    app->current_item = current_item;
 
-    // open text input view -> update app->form_data->form_input[1
-    scene_manager_handle_custom_event(app->scene_manager, CAN2VariableListTextInputEvent);
+    uint8_t current_item_index =
+        variable_item_list_get_selected_item_index(app->variable_item_list);
 
-    // use buffer to set new text
     variable_item_set_current_value_text(
-        item, app->form_data->form_inputs[current_index]->form_input_value);
+        current_item,
+        app->edit_data_simple_data->form_inputs[current_item_index]->form_input_value);
 }
 
-void can2_send_data_scene_edit_button_callback(
-    GuiButtonType button_type,
-    InputType input_type,
-    void* context) {
-    UNUSED(button_type);
-    UNUSED(input_type);
-    UNUSED(context);
+// Set current item index on app state and open text input
+void can2_edit_data_simple_variable_input_callback(void* context, uint32_t index) {
+    App* app = context;
+    app->edit_data_simple_data->current_input_number = index;
+    // open text input view -> update app->form_data->form_input[1
+    scene_manager_handle_custom_event(app->scene_manager, CAN2VariableListTextInputEvent);
 }
 
 // Send Data
@@ -302,23 +301,21 @@ void can2_send_data_scene_on_enter(void* context) {
     VariableItem* item_device_id = variable_item_list_add(
         app->variable_item_list,
         "Device ID",
-        2,
-        can2_edit_data_simple_variable_input_callback,
+        1,
+        // TODO: Do we need callbacks for this? If value changees we don't need to do anything
+        // // this should be reflected in the data already
+        can2_edit_data_simple_variable_item_changed,
         app);
 
     VariableItem* item_data_length = variable_item_list_add(
         app->variable_item_list,
         "Data Length",
-        2,
-        can2_edit_data_simple_variable_input_callback,
+        1,
+        can2_edit_data_simple_variable_item_changed,
         app);
 
     VariableItem* item_raw_data = variable_item_list_add(
-        app->variable_item_list,
-        "Raw Data ",
-        2,
-        can2_edit_data_simple_variable_input_callback,
-        app);
+        app->variable_item_list, "Raw Data ", 1, can2_edit_data_simple_variable_item_changed, app);
 
     // // TODO: use default values from config file?
     // app->form_data->form_inputs[0]->form_input_value = "000";
@@ -336,62 +333,61 @@ void can2_send_data_scene_on_enter(void* context) {
     variable_item_set_current_value_index(item_data_length, CAN2VariableListItemDataLength);
     variable_item_set_current_value_index(item_raw_data, CAN2VariableListItemRawData);
 
-    view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
+    variable_item_list_set_enter_callback(
+        app->variable_item_list, can2_edit_data_simple_variable_input_callback, app);
 
-    // Custom Form with Widget In Progress
-    //
-    // widget_reset(app->widget);
-    //
-    // char input_label_1[24];
-    // sprintf(input_label_1, "%s", "Device ID (DID):");
-    // char input_label_2[24];
-    // sprintf(input_label_2, "%s", "Device Length Code:");
-    // char input_label_3[24];
-    // sprintf(input_label_3, "%s", "Raw Data:");
-    // // Form input 1
-    // widget_add_string_element(
-    //     app->widget, 2, 4, AlignLeft, AlignCenter, FontSecondary, input_label_1);
-    // widget_add_button_element(
-    //     app->widget, GuiButtonTypeRight, "Edit", can2_send_data_scene_edit_button_callback, 0);
-    //
-    // // Form input 2
-    // widget_add_string_element(
-    //     app->widget, 2, 12, AlignLeft, AlignCenter, FontSecondary, input_label_2);
-    // // widget_add_button_element(
-    // //     app->widget, GuiButtonTypeCenter, "Edit", can2_send_data_scene_edit_button_callback, 1);
-    //
-    // // Form input 3
-    // widget_add_string_element(
-    //     app->widget, 2, 20, AlignLeft, AlignCenter, FontSecondary, input_label_3);
-    // // widget_add_button_element(
-    // //     app->widget, GuiButtonTypeCenter, "Edit", can2_send_data_scene_edit_button_callback, 1);
-    //
-    // view_dispatcher_switch_to_view(app->view_dispatcher, CAN2WidgetView);
+    view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
 }
 
 // Callback to return to variable_item_list_view from text input?
 void can2_variable_list_text_input_callback(void* context) {
     App* app = context;
+
+    // Get currently selected Variable Item List index
+    uint8_t current_item_index =
+        variable_item_list_get_selected_item_index(app->variable_item_list);
+
+    // Update corresponding data field with text_input's data
+    app->edit_data_simple_data->form_inputs[current_item_index]->form_input_value =
+        app->current_input->form_inputs[0]->form_input_value;
+
+    // return to variable_item_list view
     view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
+
+    // reset text_input's data
+    app->current_input->form_inputs[current_item_index]->form_input_value = "";
 }
 
 bool can2_send_data_scene_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
+    char* prompt_text = "Device ID";
+    uint8_t current_index = app->edit_data_simple_data->current_input_number;
     bool consumed = false;
+
     switch(event.type) {
     case SceneManagerEventTypeCustom:
         switch(event.event) {
         case CAN2VariableListTextInputEvent:
-            // TODO: There's no way this is correct, we need a text input scene?
+            switch(current_index) {
+            case 1:
+                prompt_text = "Data Length";
+                break;
+            case 2:
+                prompt_text = "Raw Data";
+                break;
+            case 0:
+            default:
+                prompt_text = "Device ID";
+                break;
+            }
             text_input_reset(app->text_input);
-            text_input_set_header_text(app->text_input, "Device ID");
+            text_input_set_header_text(app->text_input, prompt_text);
             text_input_set_result_callback(
                 app->text_input,
                 can2_variable_list_text_input_callback,
                 app,
-                // needs to be where the value of "Device Id"'s input lives'
-                app->form_data->form_inputs[0]->form_input_value,
-                app->form_data->form_inputs[0]->form_input_size,
+                app->current_input->form_inputs[current_index]->form_input_value,
+                app->current_input->form_inputs[current_index]->form_input_size,
                 true);
             view_dispatcher_switch_to_view(app->view_dispatcher, CAN2TextInputView);
             consumed = true;
@@ -541,6 +537,13 @@ static App* can2_alloc() {
     form_data_alloc(app->edit_data_simple_data);
     can2_edit_data_simple_form_data_init(app->edit_data_simple_data);
 
+    // Shared by user inputs
+    uint8_t text_input_size = 32;
+    app->current_input = malloc(sizeof(CAN2FormData));
+    app->current_input->form_inputs[0] = malloc(sizeof(CAN2FormInput));
+    app->current_input->form_inputs[0]->form_input_size = text_input_size;
+    app->current_input->form_inputs[0]->form_input_value = malloc(text_input_size);
+
     // GUI Management
     app->scene_manager = scene_manager_alloc(&can2_scene_manager_handlers, app);
 
@@ -609,8 +612,17 @@ static void can2_free(App* app) {
     byte_input_free(app->byte_input);
     text_box_free(app->text_box);
     variable_item_list_free(app->variable_item_list);
+    free(app->current_item); // free current item from variable_item_list
     dialog_ex_free(app->dialog);
     widget_free(app->widget);
+
+    // data
+    for(uint8_t idx = 0; idx < (sizeof(*app->form_data->form_inputs) / sizeof(CAN2FormData));
+        idx++) {
+        free(app->form_data->form_inputs[idx]->form_input_value);
+        free(app->form_data->form_inputs[idx]);
+    }
+    free(app->form_data);
 
     // Free App
     free(app);
