@@ -1,6 +1,6 @@
 #pragma once
 
 // Include header file for each component
-#include "main_menu.h"
-#include "read_data.h"
-#include "edit_data.h"
+#include "scenes/main_menu.h"
+#include "scenes/read_data.h"
+#include "scenes/edit_data.h"

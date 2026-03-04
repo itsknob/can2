@@ -12,19 +12,6 @@
 #include "can2.h"
 #include "can2_i.h" // IWYU pragma: keep
 
-// Edit Data Advanced
-void can2_edit_data_advanced_scene_on_enter(void* context) {
-    UNUSED(context);
-}
-bool can2_edit_data_advanced_scene_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    return false; // event not handled
-}
-void can2_edit_data_advanced_scene_on_exit(void* context) {
-    UNUSED(context);
-}
-
 // Send Data
 // Custom Form input via Widget Gui Module
 void can2_send_data_scene_on_enter(void* context) {
@@ -183,7 +170,6 @@ void (*const can2_scene_on_enter_handlers[])(void*) = {
     can2_read_data_scene_on_enter,
     can2_send_data_scene_on_enter,
     can2_edit_data_simple_scene_on_enter,
-    can2_edit_data_advanced_scene_on_enter,
     can2_config_menu_scene_on_enter,
     can2_config_read_menu_scene_on_enter,
     can2_config_send_menu_scene_on_enter};
@@ -193,7 +179,6 @@ bool (*const can2_scene_on_event_handlers[])(void*, SceneManagerEvent) = {
     can2_read_data_scene_on_event,
     can2_send_data_scene_on_event,
     can2_edit_data_simple_scene_on_event,
-    can2_edit_data_advanced_scene_on_event,
     can2_config_menu_scene_on_event,
     can2_config_read_menu_scene_on_event,
     can2_config_send_menu_scene_on_event};
@@ -203,7 +188,6 @@ void (*const can2_scene_on_exit_handlers[])(void*) = {
     can2_read_data_scene_on_exit,
     can2_send_data_scene_on_exit,
     can2_edit_data_simple_scene_on_exit,
-    can2_edit_data_advanced_scene_on_exit,
     can2_config_menu_scene_on_exit,
     can2_config_read_menu_scene_on_exit,
     can2_config_send_menu_scene_on_exit};
