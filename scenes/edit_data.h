@@ -1,5 +1,6 @@
 #pragma once
 
+#include "can2.h"
 #include <gui/scene_manager.h>
 
 #include "gui/modules/variable_item_list.h"
@@ -24,6 +25,8 @@ typedef enum {
     CAN2VariableListItemDataLength,
     CAN2VariableListItemRawData,
 } CANVariableListItem;
+
+void can2_edit_data_simple_form_data_init(CAN2FormData* edit_data_simple_data);
 
 /** Switch to Text Input **/
 void can2_edit_data_simple_input_callback(void* context);

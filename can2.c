@@ -13,21 +13,21 @@
 #include "can2_i.h" // IWYU pragma: keep
 
 // Arrays of Callbacks grouped by Lifecycle event
-void (*const can2_scene_on_enter_handlers[])(void*) = {
+static void (*const can2_scene_on_enter_handlers[])(void*) = {
     can2_main_menu_scene_on_enter,
     can2_read_data_scene_on_enter,
     can2_send_data_scene_on_enter,
     can2_edit_data_simple_scene_on_enter,
     can2_config_menu_scene_on_enter};
 
-bool (*const can2_scene_on_event_handlers[])(void*, SceneManagerEvent) = {
+static bool (*const can2_scene_on_event_handlers[])(void*, SceneManagerEvent) = {
     can2_main_menu_scene_on_event,
     can2_read_data_scene_on_event,
     can2_send_data_scene_on_event,
     can2_edit_data_simple_scene_on_event,
     can2_config_menu_scene_on_event};
 
-void (*const can2_scene_on_exit_handlers[])(void*) = {
+static void (*const can2_scene_on_exit_handlers[])(void*) = {
     can2_main_menu_scene_on_exit,
     can2_read_data_scene_on_exit,
     can2_send_data_scene_on_exit,
@@ -74,16 +74,6 @@ static void form_data_alloc(CAN2FormData* form_data) {
     }
     // initialize current input to 0;
     form_data->current_input_number = 0; // start at first input
-}
-
-// TODO: Update entire allocation process using correct data types
-void can2_edit_data_simple_form_data_init(CAN2FormData* edit_data_simple_data) {
-    // Device ID
-    edit_data_simple_data->form_inputs[0]->form_input_value = "000";
-    // Data Length
-    edit_data_simple_data->form_inputs[1]->form_input_value = "8";
-    // Raw Data (hex)
-    edit_data_simple_data->form_inputs[2]->form_input_value = "0x000000";
 }
 
 /** Allocation Fucntion **/

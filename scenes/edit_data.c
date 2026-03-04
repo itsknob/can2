@@ -1,11 +1,27 @@
 #include "can2.h"
+#include "gui/modules/variable_item_list.h"
 #include "edit_data.h"
+
+// TODO: Update entire allocation process using correct data types
+void can2_edit_data_simple_form_data_init(CAN2FormData* edit_data_simple_data) {
+    // Device ID
+    edit_data_simple_data->form_inputs[0]->form_input_value = "000";
+    // Data Length
+    edit_data_simple_data->form_inputs[1]->form_input_value = "8";
+    // Raw Data (hex)
+    edit_data_simple_data->form_inputs[2]->form_input_value = "0x000000";
+}
 
 void can2_edit_data_simple_input_callback(void* context) {
     App* app = context;
 
     scene_manager_handle_custom_event(app->scene_manager, CAN2EditDataSimpleSaveEvent);
 }
+
+struct AppContextWithCurrentItem {
+    App* app;
+    VariableItem* current_item;
+};
 
 // Edit Data Simple
 void can2_edit_data_simple_scene_on_enter(void* context) {
@@ -44,14 +60,10 @@ void can2_edit_data_simple_scene_on_exit(void* context) {
 // TODO: add any events or menu options here
 void can2_edit_data_simple_variable_item_changed(VariableItem* current_item) {
     App* app = variable_item_get_context(current_item);
-    app->current_item = current_item;
-
-    uint8_t current_item_index =
-        variable_item_list_get_selected_item_index(app->variable_item_list);
+    uint8_t current_index = variable_item_get_current_value_index(current_item);
 
     variable_item_set_current_value_text(
-        current_item,
-        app->edit_data_simple_data->form_inputs[current_item_index]->form_input_value);
+        current_item, app->edit_data_simple_data->form_inputs[current_index]->form_input_value);
 }
 
 // Set current item index on app state and open text input
