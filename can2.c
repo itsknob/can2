@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 #include "can2.h"
-#include "can2_i.h" // keep
+#include "can2_i.h" // IWYU pragma: keep
 
 // Edit Data Advanced
 void can2_edit_data_advanced_scene_on_enter(void* context) {
