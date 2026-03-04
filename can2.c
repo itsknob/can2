@@ -12,185 +12,27 @@
 #include "can2.h"
 #include "can2_i.h" // IWYU pragma: keep
 
-// Send Data
-// Custom Form input via Widget Gui Module
-void can2_send_data_scene_on_enter(void* context) {
-    App* app = context;
-
-    variable_item_list_reset(app->variable_item_list);
-    VariableItem* item_device_id = variable_item_list_add(
-        app->variable_item_list,
-        "Device ID",
-        1,
-        // TODO: Do we need callbacks for this? If value changees we don't need to do anything
-        // // this should be reflected in the data already
-        can2_edit_data_simple_variable_item_changed,
-        app);
-
-    VariableItem* item_data_length = variable_item_list_add(
-        app->variable_item_list,
-        "Data Length",
-        1,
-        can2_edit_data_simple_variable_item_changed,
-        app);
-
-    VariableItem* item_raw_data = variable_item_list_add(
-        app->variable_item_list, "Raw Data ", 1, can2_edit_data_simple_variable_item_changed, app);
-
-    // // TODO: use default values from config file?
-    // app->form_data->form_inputs[0]->form_input_value = "000";
-    // app->form_data->form_inputs[1]->form_input_value = "8";
-    // app->form_data->form_inputs[2]->form_input_value = "0x000000";
-
-    variable_item_set_current_value_text(
-        item_device_id, app->edit_data_simple_data->form_inputs[0]->form_input_value);
-    variable_item_set_current_value_text(
-        item_data_length, app->edit_data_simple_data->form_inputs[1]->form_input_value);
-    variable_item_set_current_value_text(
-        item_raw_data, app->edit_data_simple_data->form_inputs[2]->form_input_value);
-
-    variable_item_set_current_value_index(item_device_id, CAN2VariableListItemDeviceId);
-    variable_item_set_current_value_index(item_data_length, CAN2VariableListItemDataLength);
-    variable_item_set_current_value_index(item_raw_data, CAN2VariableListItemRawData);
-
-    variable_item_list_set_enter_callback(
-        app->variable_item_list, can2_edit_data_simple_variable_input_callback, app);
-
-    view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
-}
-
-// Callback to return to variable_item_list_view from text input?
-void can2_variable_list_text_input_callback(void* context) {
-    App* app = context;
-
-    // Get currently selected Variable Item List index
-    uint8_t current_item_index =
-        variable_item_list_get_selected_item_index(app->variable_item_list);
-
-    // Update corresponding data field with text_input's data
-    app->edit_data_simple_data->form_inputs[current_item_index]->form_input_value =
-        app->current_input->form_inputs[0]->form_input_value;
-
-    // return to variable_item_list view
-    view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
-
-    // reset text_input's data
-    app->current_input->form_inputs[current_item_index]->form_input_value = "";
-}
-
-bool can2_send_data_scene_on_event(void* context, SceneManagerEvent event) {
-    App* app = context;
-    char* prompt_text = "Device ID";
-    uint8_t current_index = app->edit_data_simple_data->current_input_number;
-    bool consumed = false;
-
-    switch(event.type) {
-    case SceneManagerEventTypeCustom:
-        switch(event.event) {
-        case CAN2VariableListTextInputEvent:
-            switch(current_index) {
-            case 1:
-                prompt_text = "Data Length";
-                break;
-            case 2:
-                prompt_text = "Raw Data";
-                break;
-            case 0:
-            default:
-                prompt_text = "Device ID";
-                break;
-            }
-            text_input_reset(app->text_input);
-            text_input_set_header_text(app->text_input, prompt_text);
-            text_input_set_result_callback(
-                app->text_input,
-                can2_variable_list_text_input_callback,
-                app,
-                app->current_input->form_inputs[current_index]->form_input_value,
-                app->current_input->form_inputs[current_index]->form_input_size,
-                true);
-            view_dispatcher_switch_to_view(app->view_dispatcher, CAN2TextInputView);
-            consumed = true;
-            break;
-        default:
-            break;
-        }
-    default:
-        break;
-    }
-    return consumed;
-}
-void can2_send_data_scene_on_exit(void* context) {
-    UNUSED(context);
-}
-
-// Config Menu
-void can2_config_menu_scene_on_enter(void* context) {
-    UNUSED(context);
-}
-bool can2_config_menu_scene_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    return false; // event not handled
-}
-void can2_config_menu_scene_on_exit(void* context) {
-    UNUSED(context);
-}
-
-// Config Read Menu
-void can2_config_read_menu_scene_on_enter(void* context) {
-    UNUSED(context);
-}
-bool can2_config_read_menu_scene_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    return false; // event not handled
-}
-void can2_config_read_menu_scene_on_exit(void* context) {
-    UNUSED(context);
-}
-
-// Config Send Menu
-void can2_config_send_menu_scene_on_enter(void* context) {
-    UNUSED(context);
-}
-bool can2_config_send_menu_scene_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    return false; // event not handled
-}
-void can2_config_send_menu_scene_on_exit(void* context) {
-    UNUSED(context);
-}
-/** End Callbacks for Scenes **/
-
 // Arrays of Callbacks grouped by Lifecycle event
 void (*const can2_scene_on_enter_handlers[])(void*) = {
     can2_main_menu_scene_on_enter,
     can2_read_data_scene_on_enter,
     can2_send_data_scene_on_enter,
     can2_edit_data_simple_scene_on_enter,
-    can2_config_menu_scene_on_enter,
-    can2_config_read_menu_scene_on_enter,
-    can2_config_send_menu_scene_on_enter};
+    can2_config_menu_scene_on_enter};
 
 bool (*const can2_scene_on_event_handlers[])(void*, SceneManagerEvent) = {
     can2_main_menu_scene_on_event,
     can2_read_data_scene_on_event,
     can2_send_data_scene_on_event,
     can2_edit_data_simple_scene_on_event,
-    can2_config_menu_scene_on_event,
-    can2_config_read_menu_scene_on_event,
-    can2_config_send_menu_scene_on_event};
+    can2_config_menu_scene_on_event};
 
 void (*const can2_scene_on_exit_handlers[])(void*) = {
     can2_main_menu_scene_on_exit,
     can2_read_data_scene_on_exit,
     can2_send_data_scene_on_exit,
     can2_edit_data_simple_scene_on_exit,
-    can2_config_menu_scene_on_exit,
-    can2_config_read_menu_scene_on_exit,
-    can2_config_send_menu_scene_on_exit};
+    can2_config_menu_scene_on_exit};
 
 // SceneManagerHandlers will be used to initialize the SceneManager
 static const SceneManagerHandlers can2_scene_manager_handlers = {
@@ -201,7 +43,7 @@ static const SceneManagerHandlers can2_scene_manager_handlers = {
 };
 
 // Function to handle BACK button
-bool can2_back_event_callback(void* context) {
+static bool can2_back_event_callback(void* context) {
     furi_assert(context);
     App* app = context;
     return scene_manager_handle_back_event(app->scene_manager);
