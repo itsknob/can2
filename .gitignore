@@ -5,4 +5,6 @@ dist/*
 .editorconfig
 .env
 .ufbt
-.cache/clangd/index/
+.cache/*
+.cache
+compile_commands.json

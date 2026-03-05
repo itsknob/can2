@@ -1,9 +1,53 @@
 #include "can2.h"
 #include "edit_data.h"
+#include "gui/modules/byte_input.h"
 #include "gui/modules/variable_item_list.h"
+#include "gui/view_dispatcher.h"
 #include "send_data.h"
 
-void render_send_data_gui(void* context) {
+/**
+* 1. Send Data Screen 
+*   - Form
+*       - Labels
+*       - Values
+*   - Up/Down Buttons
+*       - Navigate between Form Inputs
+*   - Center Button
+*       - Edit Value for Label (2)
+*   - Right Button
+*       - Go to Filter (3)
+*   - Left Button
+*       - Go to Config (4)
+* 2. Edit Data Screen
+*   - TextInput View
+*       - Save -> Go to Send Data Screen (1)
+*   - NumberInput View
+*       - Save -> Go to Send Data Screen (1)
+*   - ByteInput View
+*       - Save -> Go to Send Data Screen (1)
+*   - Back Button
+*       - Go to Send Data Screen (1)
+* 3. Filter Screen
+*   - List of IDs already in filter list?
+*       - Last Row is "+ Add Entry"
+*   - Up/Down Buttons
+*       - Navigate between Form Inputs
+*   - Center Button
+*       - On populated row
+*           - Confirmation Popup
+*               - Right Button
+*                   - Delete -> Go to Filter Screen (3)
+*               - Left Button
+*                   - Cancel -> Go to Filter Screen (3)
+*               - Back Button
+*                   - Cancel -> Go to Filter Screen (3)
+*       - On "+ Add Entry" Row
+*           - NumberInput?
+*               - Save -> Go to Filter Screen (3)
+*       
+**/
+
+void can2_send_data_scene_render(void* context) {
     App* app = context;
 
     variable_item_list_reset(app->variable_item_list);
@@ -50,16 +94,22 @@ void render_send_data_gui(void* context) {
 
 // Send Data
 // Custom Form input via Widget Gui Module
+/** When switching to the Send Data Scene 
+ * First set up the View
+ * Then Switch to it
+ **/
 void can2_send_data_scene_on_enter(void* context) {
     App* app = context;
 
-    render_send_data_gui(app);
+    // (Re)Render Scene
+    can2_send_data_scene_render(app);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
 }
 
 // Callback to return to variable_item_list_view from text input?
-void can2_variable_list_text_input_callback(void* context) {
+// Move the curren_input value into the correct edit_data_simple_data-form data value
+void can2_send_data_input_callback(void* context) {
     App* app = context;
 
     // Get currently selected Variable Item List index
@@ -71,12 +121,12 @@ void can2_variable_list_text_input_callback(void* context) {
         app->current_input->form_inputs[0]->form_input_value;
 
     // Recreate GUI with data from edit_data_simple_data
-    render_send_data_gui(app);
+    can2_send_data_scene_render(app);
 
     // return to variable_item_list view
     view_dispatcher_switch_to_view(app->view_dispatcher, CAN2VariableItemListView);
 
-    // reset text_input's data
+    // reset CAN2FormData's buffer for app->current_input-
     app->current_input->form_inputs[current_item_index]->form_input_value = "";
 }
 
@@ -86,35 +136,52 @@ bool can2_send_data_scene_on_event(void* context, SceneManagerEvent event) {
     uint8_t current_index = app->edit_data_simple_data->current_input_number;
     bool consumed = false;
 
+    // Set up Input's Header Text for Currently Selected Option
+    switch(current_index) {
+    case 1:
+        prompt_text = "Data Length";
+        break;
+    case 2:
+        prompt_text = "Raw Data";
+        break;
+    case 0:
+    default:
+        prompt_text = "Device ID";
+        break;
+    }
+
     switch(event.type) {
     case SceneManagerEventTypeCustom:
         switch(event.event) {
         case CAN2VariableListTextInputEvent:
-            // Set up Input's Header Text for Currently Selected Option
-            switch(current_index) {
-            case 1:
-                prompt_text = "Data Length";
-                break;
-            case 2:
-                prompt_text = "Raw Data";
-                break;
-            case 0:
-            default:
-                prompt_text = "Device ID";
-                break;
-            }
-
             // Set up Text Input Scene
             text_input_reset(app->text_input);
             text_input_set_header_text(app->text_input, prompt_text);
             text_input_set_result_callback(
                 app->text_input,
-                can2_variable_list_text_input_callback,
+                can2_send_data_input_callback,
                 app,
-                app->current_input->form_inputs[current_index]->form_input_value,
-                app->current_input->form_inputs[current_index]->form_input_size,
+                app->edit_data_simple_data->form_inputs[current_index]->form_input_value,
+                app->edit_data_simple_data->form_inputs[current_index]->form_input_size,
                 true);
             view_dispatcher_switch_to_view(app->view_dispatcher, CAN2TextInputView);
+            consumed = true;
+            break;
+        case CAN2VariableListByteInputEvent:
+            // NOTE: Is there a reset for byte_input?
+            byte_input_set_header_text(app->byte_input, "Raw Data");
+            byte_input_set_result_callback(
+                app->byte_input,
+                can2_send_data_input_callback,
+                can2_send_data_scene_render,
+                app,
+                (unsigned char*)app->edit_data_simple_data
+                    ->form_inputs[app->edit_data_simple_data->current_input_number]
+                    ->form_input_value,
+                app->edit_data_simple_data
+                    ->form_inputs[app->edit_data_simple_data->current_input_number]
+                    ->form_input_size);
+            view_dispatcher_switch_to_view(app->view_dispatcher, CAN2ByteInputView);
             consumed = true;
             break;
         default:

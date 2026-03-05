@@ -65,7 +65,7 @@ static void form_input_alloc(CAN2FormInput* input, uint8_t input_size) {
 // TODO: Figure out how to not hardcode this to 4 inputs
 static void form_data_alloc(CAN2FormData* form_data) {
     const uint8_t NUM_INPUTS = 3;
-    const uint8_t INPUT_SIZE = 24;
+    const uint8_t INPUT_SIZE = 32;
 
     // allocate form_input for each of NUM_INPUTS
     for(uint8_t idx = 0; idx < NUM_INPUTS; idx++) {

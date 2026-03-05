@@ -18,11 +18,6 @@ void can2_edit_data_simple_input_callback(void* context) {
     scene_manager_handle_custom_event(app->scene_manager, CAN2EditDataSimpleSaveEvent);
 }
 
-struct AppContextWithCurrentItem {
-    App* app;
-    VariableItem* current_item;
-};
-
 // Edit Data Simple
 void can2_edit_data_simple_scene_on_enter(void* context) {
     /**
@@ -70,6 +65,14 @@ void can2_edit_data_simple_variable_item_changed(VariableItem* current_item) {
 void can2_edit_data_simple_variable_input_callback(void* context, uint32_t index) {
     App* app = context;
     app->edit_data_simple_data->current_input_number = index;
-    // open text input view -> update app->form_data->form_input[1
-    scene_manager_handle_custom_event(app->scene_manager, CAN2VariableListTextInputEvent);
+
+    switch(index) {
+    case CAN2VariableListItemRawData:
+        scene_manager_handle_custom_event(app->scene_manager, CAN2VariableListByteInputEvent);
+        break;
+    default:
+        // open text input view -> update app->form_data->form_input[1
+        scene_manager_handle_custom_event(app->scene_manager, CAN2VariableListTextInputEvent);
+        break;
+    }
 }

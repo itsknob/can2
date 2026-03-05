@@ -43,6 +43,7 @@ typedef enum {
 typedef struct {
     char* form_input_value;
     uint8_t form_input_size;
+    // TODO: Does need need to be able to hold any datatype?
 } CAN2FormInput;
 
 /* Form Data Struct - Multiple Input Container */
